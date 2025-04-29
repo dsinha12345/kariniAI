@@ -30,7 +30,7 @@ const connectDB = async () => {
     await client.connect();
     console.log("Successfully connected to MongoDB Atlas!");
     // IMPORTANT: Replace "yourDatabaseName" below with your actual database name!
-    dbConnection = client.db("yourDatabaseName"); // <--- CHANGE THIS
+    dbConnection = client.db("kariniStore"); // <--- CHANGE THIS
     // Optional: You might want to ping to confirm
     await dbConnection.command({ ping: 1 });
     console.log("Pinged deployment successfully.");
