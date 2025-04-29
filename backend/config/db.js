@@ -29,7 +29,8 @@ const connectDB = async () => {
   try {
     await client.connect();
     console.log("Successfully connected to MongoDB Atlas!");
-    dbConnection = client.db("yourDatabaseName"); // Specify your database name here
+    // IMPORTANT: Replace "yourDatabaseName" below with your actual database name!
+    dbConnection = client.db("yourDatabaseName"); // <--- CHANGE THIS
     // Optional: You might want to ping to confirm
     await dbConnection.command({ ping: 1 });
     console.log("Pinged deployment successfully.");
@@ -51,11 +52,20 @@ const getDb = () => {
 
 // Function to close the connection (useful for graceful shutdown)
 const closeDB = async () => {
-    if(client && client.topology && client.topology.isConnected()) {
-        await client.close();
-        console.log("MongoDB connection closed.");
-        dbConnection = null;
+    // Check if the client exists and is connected before attempting to close
+    if(client && typeof client.close === 'function') {
+        try {
+            await client.close();
+            console.log("MongoDB connection closed.");
+            dbConnection = null;
+        } catch (err) {
+            console.error("Error closing MongoDB connection:", err);
+        }
+    } else {
+        console.log("MongoDB client not connected or doesn't exist, skipping close.");
+        dbConnection = null; // Still reset dbConnection
     }
 };
+
 
 module.exports = { connectDB, getDb, closeDB }; // Export functions
