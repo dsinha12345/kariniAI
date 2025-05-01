@@ -17,7 +17,7 @@ connectDB().then(() => { // Call connectDB and wait for it to complete
   app.get('/', (req, res) => res.send('API Running')); // Simple test route
   app.use('/api/items', require('./routes/items'));
   // Add chat routes later if needed:
-  // app.use('/api/chat', require('./routes/chat'));
+  app.use('/api/chat', require('./routes/chat'));
 
   const PORT = process.env.PORT || 5001; // Use environment port or default
 
