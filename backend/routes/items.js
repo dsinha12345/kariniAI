@@ -19,8 +19,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-// @route   GET /api/items/search
-// @desc    Search items by Title or SKU
 router.get('/search', async (req, res) => {
   const query = req.query.q;
   if (!query) {
@@ -28,25 +26,20 @@ router.get('/search', async (req, res) => {
   }
   try {
     const db = getDb();
-    // Ensure you have a text index created in MongoDB on Title and 'Variant SKU'
-    // db.collection('items').createIndex({ Title: 'text', 'Variant SKU': 'text' })
-    const items = await db.collection(ITEMS_COLLECTION).find(
-        { $text: { $search: query } },
-        { projection: { score: { $meta: "textScore" } } } // Project score if needed
-    ).sort({ score: { $meta: "textScore" } }).toArray();
-
-    // Alternative: Regex search (less efficient)
-    /*
-    const items = await db.collection(ITEMS_COLLECTION).find({
-        $or: [
-          { Title: { $regex: query, $options: 'i' } },
-          { 'Variant SKU': { $regex: query, $options: 'i' } }
-        ]
-    }).toArray();
-    */
-    res.json(items);
+    const items = await db.collection(ITEMS_COLLECTION).aggregate([
+      {
+        $search: {
+          index: "default", // Ensure you have an Atlas Search index named 'default'
+          text: {
+            query: query,
+            path: { wildcard: "*" } // Search all fields
+          }
+        }
+      }
+    ]).toArray();
+    res.json(items); // Return the search results
   } catch (err) {
-    console.error(err.message);
+    console.error("Search error:", err.message); // Log any errors
     res.status(500).send('Server Error');
   }
 });
