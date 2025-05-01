@@ -12,11 +12,9 @@ if (!uri) {
 
 // Create a MongoClient with options
 const client = new MongoClient(uri, {
-  serverApi: {
-    version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
-  }
+  // No serverApi block here anymore
+  // You might add other options like useNewUrlParser, useUnifiedTopology if needed by older drivers,
+  // but they are often default in newer versions. Check driver docs if issues arise.
 });
 
 let dbConnection;
