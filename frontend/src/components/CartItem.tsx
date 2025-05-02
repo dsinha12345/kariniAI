@@ -40,17 +40,21 @@ const CartItem: React.FC<CartItemProps> = ({ item, onRemove }) => {
     <li className="flex items-center justify-between py-2 border-b border-gray-200 dark:border-gray-700 last:border-b-0">
       <div className="flex items-center space-x-3">
         {/* Small Image Thumbnail */}
+        {/* Container needs relative positioning for fill layout */}
         <div className="relative w-10 h-10 flex-shrink-0 bg-gray-200 dark:bg-gray-600 rounded overflow-hidden">
+           {/* --- UPDATED IMAGE COMPONENT --- */}
            <Image
              src={displayImgSrc}
              alt={item.Title || 'Cart item image'}
-             layout="fill"
-             objectFit="cover" // Use cover for small thumbnails
+             fill // Use fill instead of layout="fill"
+             sizes="40px" // Provide sizes prop when using fill (match container size)
+             className="object-cover" // Use Tailwind class for object-fit
              onError={(e) => {
                (e.target as HTMLImageElement).src = PLACEHOLDER_IMAGE;
                (e.target as HTMLImageElement).srcset = "";
              }}
            />
+           {/* --- END UPDATE --- */}
         </div>
         {/* Item Title and Quantity */}
         <div>
@@ -70,12 +74,7 @@ const CartItem: React.FC<CartItemProps> = ({ item, onRemove }) => {
           title="Remove item"
           className="text-red-500 hover:text-red-700 dark:hover:text-red-400 text-xs font-medium"
         >
-          {/* Simple text remove button */}
           Remove
-          {/* Or use an icon: */}
-          {/* <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-          </svg> */}
         </button>
       </div>
     </li>
