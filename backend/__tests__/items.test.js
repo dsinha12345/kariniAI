@@ -18,8 +18,6 @@ describe('Items API', () => {
             const res = await request(app).get('/api/items');
             expect(res.statusCode).toEqual(200);
             expect(Array.isArray(res.body)).toBe(true);
-            // Optionally, check if the array is not empty if you expect data
-            // expect(res.body.length).toBeGreaterThan(0);
         });
     });
 
@@ -32,16 +30,14 @@ describe('Items API', () => {
         });
 
         it('should return search results as an array when query "q" is provided', async () => {
-            // Replace 'testQuery' with a term likely to exist in your data for a better test
-            const searchQuery = 'testQuery';
+            const searchQuery = 'Zebra';
             const res = await request(app).get(`/api/items/search?q=${searchQuery}`);
             expect(res.statusCode).toEqual(200);
             expect(Array.isArray(res.body)).toBe(true);
-            // You might add more specific checks based on expected search results
         });
 
         it('should return an empty array if search query yields no results', async () => {
-            const searchQuery = 'aVeryUnlikelyQueryStringXYZ123'; // Use a query unlikely to match
+            const searchQuery = 'notaproductintheitemsdataset'; // Use a query unlikely to match
             const res = await request(app).get(`/api/items/search?q=${searchQuery}`);
             expect(res.statusCode).toEqual(200);
             expect(Array.isArray(res.body)).toBe(true);

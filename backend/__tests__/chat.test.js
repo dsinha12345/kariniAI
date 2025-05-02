@@ -1,8 +1,7 @@
 // backend/__tests__/chat.test.js
 const request = require('supertest');
-const { app, connectDB, closeDB } = require('../server'); // Adjust path as necessary
+const { app, connectDB, closeDB } = require('../server');
 
-// Mock the global fetch function
 global.fetch = jest.fn();
 
 // Connect to the database before running tests
@@ -42,7 +41,6 @@ describe('Chat API', () => {
         // Test successful response when OpenRouter API call succeeds
         it('should return AI response on successful query', async () => {
             const mockAiResponse = "This is a mock AI response.";
-            // Simulate a successful fetch response from OpenRouter
             fetch.mockResolvedValueOnce({
                 ok: true,
                 status: 200,
@@ -58,9 +56,7 @@ describe('Chat API', () => {
 
             expect(res.statusCode).toEqual(200);
             expect(res.body.response).toEqual(mockAiResponse);
-            // Check if fetch was called (optional, but good practice)
             expect(fetch).toHaveBeenCalledTimes(1);
-            // You could add more specific checks here about the fetch arguments if needed
         });
 
         // Test error handling when OpenRouter API call fails
@@ -83,10 +79,7 @@ describe('Chat API', () => {
             expect(res.body.response).toContain('OpenRouter API request failed: Internal Server Error');
             expect(fetch).toHaveBeenCalledTimes(1);
         });
-
-         // Test error handling when OpenRouter returns unexpected format
         it('should return 500 if OpenRouter response format is unexpected', async () => {
-            // Simulate a successful status but unexpected payload
             fetch.mockResolvedValueOnce({
                 ok: true,
                 status: 200,
@@ -103,11 +96,6 @@ describe('Chat API', () => {
             expect(res.body.response).toContain('Received an unexpected response format from the AI');
             expect(fetch).toHaveBeenCalledTimes(1);
         });
-
-        // Note: Testing the database interaction (finding product context)
-        // would require more setup, potentially seeding a test database or
-        // mocking the database calls (`getDb`, `collection.findOne`, `collection.aggregate`).
-        // These tests focus on the API interaction logic assuming DB works or returns null context.
 
     });
 });
