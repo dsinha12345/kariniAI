@@ -42,36 +42,61 @@ router.post('/query', async (req, res) => {
 
     let productContext = null;
     let productFound = null;
+    let potentialProduct = null; // Declare potentialProduct outside the try block
 
-    // --- Step 1: Try to find relevant product context in DB using Atlas Search ---
+    // --- Step 1: Try to find relevant product context in DB ---
     try {
         const db = getDb();
         const collection = db.collection(ITEMS_COLLECTION);
 
-        console.log(`Chat: Attempting Atlas Search for context based on: "${message}"`);
-        // Use Atlas Search to find the most relevant product mentioned
-        const searchResults = await collection.aggregate([
-          {
-            $search: {
-              index: "default", // Ensure your Atlas Search index is named "default"
-              // Use 'text' operator for broader matching based on keywords in the message
-              text: {
-                query: message, // Search using the user's full message
-                // Search across relevant fields (ensure these are indexed in Atlas Search)
-                path: ["Title", "Body", "Tags", "Variant SKU"], // Search multiple fields
-                // Optional: Add fuzzy matching if desired
-                fuzzy: { maxEdits: 1, prefixLength: 2 }
-              }
-            }
-          },
-          { $limit: 1 } // Get only the single most relevant product match
-        ]).toArray();
+        // --- Improvement: Check for SKU pattern first ---
+        // Regex to find potential SKUs (adjust if your SKU format differs)
+        // This looks for patterns like DBxxx-xxx-x or TSxx-xxx-x etc.
+        const skuRegex = /([A-Z]{2}\d+-[A-Z]{3}-\d+)/i; // Case-insensitive
+        const skuMatch = message.match(skuRegex);
 
-        if (searchResults && searchResults.length > 0) {
-            const potentialProduct = searchResults[0]; // Take the top result
-            console.log(`Found potential product context via Atlas Search: ${potentialProduct.Title || potentialProduct['Variant SKU']}`);
+        if (skuMatch && skuMatch[1]) {
+            const skuToFind = skuMatch[1];
+            console.log(`Chat: Extracted potential SKU: ${skuToFind}. Attempting findOne.`);
+            // Use findOne for exact SKU match - more reliable than text search for SKUs
+            potentialProduct = await collection.findOne({ "Variant SKU": skuToFind });
+            if (potentialProduct) {
+                 console.log(`Found product context via SKU findOne: ${potentialProduct.Title || potentialProduct['Variant SKU']}`);
+            } else {
+                 console.log(`No product found with exact SKU: ${skuToFind}. Falling back to Atlas Search.`);
+            }
+        }
+        // --- End SKU Check ---
+
+        // --- Fallback to Atlas Search if no exact SKU match found ---
+        if (!potentialProduct) {
+            console.log(`Chat: Attempting Atlas Search for context based on: "${message}"`);
+            const searchResults = await collection.aggregate([
+              {
+                $search: {
+                  index: "default",
+                  text: {
+                    query: message,
+                    path: ["Title", "Body", "Tags", "Variant SKU"],
+                    fuzzy: { maxEdits: 1, prefixLength: 2 }
+                  }
+                }
+              },
+              { $limit: 1 }
+            ]).toArray();
+
+            if (searchResults && searchResults.length > 0) {
+                potentialProduct = searchResults[0]; // Take the top result
+                console.log(`Found potential product context via Atlas Search: ${potentialProduct.Title || potentialProduct['Variant SKU']}`);
+            } else {
+                console.log("No relevant product context found via Atlas Search for this query.");
+            }
+        }
+        // --- End Atlas Search Fallback ---
+
+        // --- Construct Context if a product was found by either method ---
+        if (potentialProduct) {
             productFound = potentialProduct;
-            // Construct context string for the AI
             productContext = `
 Product Information:
 Title: ${potentialProduct.Title || 'N/A'}
@@ -81,18 +106,15 @@ Price: $${parsePrice(potentialProduct['Variant Price']).toFixed(2)}
 Type: ${potentialProduct.Type || 'N/A'}
 Tags: ${potentialProduct.Tags || 'N/A'}
             `.trim();
-        } else {
-            console.log("No relevant product context found via Atlas Search for this query.");
         }
+        // --- End Context Construction ---
 
     } catch (dbError) {
-        // Check if the error is because the $search stage is unknown (index might not exist)
         if (dbError.message && dbError.message.includes("Unrecognized pipeline stage name: '$search'")) {
              console.warn("Atlas Search index 'default' might be missing or not ready. Proceeding without context.");
         } else {
             console.error("Database lookup error during chat query:", dbError);
         }
-        // Don't stop the process, just proceed without context
         productContext = null;
         productFound = null;
     }
@@ -101,16 +123,13 @@ Tags: ${potentialProduct.Tags || 'N/A'}
 
     // --- Step 2: Prepare messages for OpenRouter AI ---
     const messagesForAI = [];
-
-    // Add a system prompt to guide the AI
     messagesForAI.push({
         "role": "system",
         "content": productContext
-            ? "You are a helpful assistant for an e-commerce store. Answer the user's question based *only* on the provided 'Product Information' context. Be concise. If the context doesn't contain the answer, say you don't have that specific information."
-            : "You are a helpful assistant. Answer the user's question generally." // General prompt if no context
+            ? `You are an assistant for an online store. You MUST answer the user's question using ONLY the information provided below in the 'Product Information' context. Do NOT use any external knowledge or make assumptions. If the answer is not in the context, state clearly that the information is unavailable in the provided details. Be concise.\n\nProduct Information:\n${productContext}`
+            : "You are a helpful assistant. Answer the user's question generally."
     });
 
-    // Add the actual user message
     messagesForAI.push({
         "role": "user",
         "content": message
@@ -121,38 +140,24 @@ Tags: ${potentialProduct.Tags || 'N/A'}
         const requestBody = {
             model: AI_MODEL,
             messages: messagesForAI,
-            // Optional parameters
-            // temperature: 0.7,
-            // max_tokens: 150,
         };
-
         console.log("Sending to OpenRouter:", JSON.stringify(requestBody, null, 2));
-
         const apiResponse = await fetch(OPENROUTER_API_URL, {
             method: "POST",
             headers: {
                 "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
-                "HTTP-Referer": YOUR_SITE_URL, // Optional
-                "X-Title": YOUR_SITE_NAME,    // Optional
                 "Content-Type": "application/json"
             },
             body: JSON.stringify(requestBody)
         });
 
-        // Handle API response errors
         if (!apiResponse.ok) {
             let errorDetails = `API request failed with status ${apiResponse.status}`;
-            try {
-                const errorData = await apiResponse.json();
-                errorDetails += `: ${JSON.stringify(errorData)}`;
-            } catch (_) { /* Ignore */ }
+            try { const errorData = await apiResponse.json(); errorDetails += `: ${JSON.stringify(errorData)}`; } catch (_) { /* Ignore */ }
             console.error("OpenRouter API Error:", errorDetails);
             throw new Error(`OpenRouter API request failed: ${apiResponse.statusText}`);
         }
-
         const responseData = await apiResponse.json();
-
-        // Extract the assistant's reply
         const assistantMessage = responseData.choices?.[0]?.message?.content;
 
         if (!assistantMessage) {
@@ -160,10 +165,7 @@ Tags: ${potentialProduct.Tags || 'N/A'}
             throw new Error("Received an unexpected response format from the AI.");
         }
 
-        console.log(`OpenRouter Response: "${assistantMessage}"`);
-
         // --- Step 4: Send response back to frontend ---
-        // Send only the text response.
         res.json({ response: assistantMessage.trim() });
 
     } catch (err) {
