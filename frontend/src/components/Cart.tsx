@@ -49,7 +49,7 @@ const Cart: React.FC<CartProps> = ({ cartItems, onRemoveFromCart }) => {
       ) : (
         <>
           {/* List of cart items */}
-          <ul className="space-y-1 max-h-80 overflow-y-auto mb-4 pr-2"> {/* Added max height and scroll */}
+          <ul className="space-y-1 max-h-50 overflow-y-auto mb-4 pr-2"> {/* Added max height and scroll */}
             {cartItems.map(item => (
               <CartItem
                 key={item['Variant SKU']}
