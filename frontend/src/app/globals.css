@@ -24,3 +24,31 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Revised Marquee animation for overflowing text */
+@keyframes marquee {
+  0%   { transform: translateX(0%); }
+  100% { transform: translateX(-100%); } /* Scroll fully to the left */
+}
+
+.marquee-container {
+  overflow: hidden;      /* Clip the overflowing text */
+  white-space: nowrap;   /* Prevent text wrapping */
+  position: relative;    /* Positioning context for text */
+  width: 100%;           /* Take full available width */
+  cursor: default;       /* Indicate it's text content */
+}
+
+.marquee-container .marquee-text {
+  display: inline-block; /* Allow transform to work */
+  will-change: transform; /* Optimize animation */
+  /* Text is visible by default, animation applied on hover below */
+}
+
+/* Apply animation only when the container is hovered */
+.marquee-container:hover .marquee-text {
+  /* Add space after the text before it repeats */
+  padding-right: 3em; /* Adjust gap as needed */
+  animation: marquee 8s linear infinite; /* Adjust duration as needed */
+  animation-delay: 0.5s; /* Small pause before starting */
+}
