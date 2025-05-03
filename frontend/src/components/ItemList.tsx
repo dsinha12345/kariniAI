@@ -3,6 +3,7 @@
 
 import React from 'react';
 import Item from './Item'; // Import the Item component
+import ItemModal from './ItemModal'; // Import the ItemModal component
 
 // Define the structure for items passed to this list
 interface ItemData {
@@ -22,6 +23,9 @@ interface ItemListProps {
 }
 
 const ItemList: React.FC<ItemListProps> = ({ items, onAddToCart }) => {
+  const [selectedItem, setSelectedItem] = React.useState<ItemData | null>(null);
+  const openModal = (item: ItemData) => setSelectedItem(item);
+  const closeModal = () => setSelectedItem(null);
   // Handle the case where there are no items to display
   if (!items || items.length === 0) {
     return <p className="text-center text-gray-500 dark:text-gray-400">No items found.</p>;
@@ -43,8 +47,15 @@ const ItemList: React.FC<ItemListProps> = ({ items, onAddToCart }) => {
           key={item._id || item['Variant SKU']}
           item={item}
           onAddToCart={onAddToCart} // Pass the addToCart function down
+          onItemSelect={openModal}
         />
       ))}
+      {selectedItem && (
+        <ItemModal
+          item={selectedItem}
+          onClose={closeModal}
+        />
+      )}
     </div>
   );
 };
