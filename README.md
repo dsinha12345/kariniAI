@@ -31,7 +31,7 @@ This project demonstrates a full-stack e-commerce application featuring a produc
 *   **Runtime:** Node.js
 *   **Framework:** Express.js
 *   **Database:** MongoDB (using native `mongodb` driver)
-*   **API Testing:** Jest, Supertest
+*   **API Testing:** Jest
 *   **Environment Variables:** `dotenv`
 *   **CORS:** `cors` package
 *   **AI Service Integration:** OpenRouter (via standard `fetch` API)
