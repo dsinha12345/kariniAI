@@ -1,6 +1,6 @@
 # E-commerce Demo Application
 
-This project demonstrates a full-stack e-commerce application featuring a product catalog, search functionality, and an AI-powered chat assistant integrated with product context
+This project demonstrates a full-stack e-commerce application featuring a product catalog, search functionality, and an AI-powered chat assistant integrated with product context.
 
 ## Functionality
 
